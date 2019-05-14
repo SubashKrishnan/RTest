@@ -11,21 +11,55 @@ namespace Data
     public class Repository<T> : IRepository<T> where T : class
     {
         private readonly dbdevdgitoolContext context;
-        private readonly DbSet<T> entity;
+        private readonly DbSet<T> entities;
         public Repository(dbdevdgitoolContext context)
         {
             this.context = context;
-            entity = context.Set<T>();
+            entities = context.Set<T>();
         }
         
         public virtual async Task<IEnumerable<T>> Get(Expression<Func<T, bool>> filter = null)
         {
-            IQueryable<T> query = entity;
+            IQueryable<T> query = entities;
             if (filter != null)
             {
                 query = query.Where(filter);
             }
             return await query.ToListAsync();
+        }
+
+        public virtual async Task<T> GetByID(object id)
+        {
+            return await entities.FindAsync(id);
+        }
+
+        public virtual void Insert(T entity)
+        {
+            entities.Add(entity);
+            context.SaveChanges();
+        }
+
+        public virtual void Delete(object id)
+        {
+            T entityToDelete = entities.Find(id);
+            Delete(entityToDelete);
+        }
+
+        public virtual void Delete(T entityToDelete)
+        {
+            if (context.Entry(entityToDelete).State == EntityState.Detached)
+            {
+                entities.Attach(entityToDelete);
+            }
+            entities.Remove(entityToDelete);
+            context.SaveChanges();
+        }
+
+        public virtual void Update(T entityToUpdate)
+        {
+            entities.Attach(entityToUpdate);
+            context.Entry(entityToUpdate).State = EntityState.Modified;
+            context.SaveChanges();
         }
     }
 }
